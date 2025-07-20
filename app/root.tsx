@@ -1,116 +1,133 @@
-import {Analytics, getShopAnalytics, useNonce} from '@shopify/hydrogen';
-import {type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {
-  Outlet,
-  useRouteError,
+  type AppLoadContext,
+  defer,
+  type LinksFunction,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
+import {
   isRouteErrorResponse,
-  type ShouldRevalidateFunction,
   Links,
   Meta,
+  type MetaFunction,
+  Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteError,
+  type ShouldRevalidateFunction,
   useRouteLoaderData,
-} from 'react-router';
-import favicon from '~/assets/favicon.svg';
-import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
-import resetStyles from '~/styles/reset.css?url';
-import appStyles from '~/styles/app.css?url';
-import {PageLayout} from './components/PageLayout';
+} from '@remix-run/react';
+import {
+  useNonce,
+  getSeoMeta,
+  Analytics,
+  getShopAnalytics,
+} from '@shopify/hydrogen';
+import {Layout} from '~/components/Layout';
+import {seoPayload} from '~/lib/seo.server';
+import favicon from '@/assets/favicon.svg';
+import {GenericError} from './components/GenericError';
+import {NotFound} from './components/NotFound';
+import styles from './styles/app.css?url';
+import stylesFont from './styles/custom-font.css?url';
+import {DEFAULT_LOCALE} from './lib/utils';
+import rcSliderStyle from 'rc-slider/assets/index.css?url';
+import {COMMON_COLLECTION_ITEM_FRAGMENT} from './data/commonFragments';
+import {OkendoProvider, getOkendoProviderData} from '@okendo/shopify-hydrogen';
+import invariant from 'tiny-invariant';
 
-export type RootLoader = typeof loader;
-
-/**
- * This is important to avoid re-fetching root queries on sub-navigations
- */
+// This is important to avoid re-fetching root queries on sub-navigations
 export const shouldRevalidate: ShouldRevalidateFunction = ({
   formMethod,
   currentUrl,
   nextUrl,
 }) => {
   // revalidate when a mutation is performed e.g add to cart, login...
-  if (formMethod && formMethod !== 'GET') return true;
+  if (formMethod && formMethod !== 'GET') {
+    return true;
+  }
 
   // revalidate when manually revalidating via useRevalidator
-  if (currentUrl.toString() === nextUrl.toString()) return true;
+  if (currentUrl.toString() === nextUrl.toString()) {
+    return true;
+  }
 
-  // Defaulting to no revalidation for root loader data to improve performance.
-  // When using this feature, you risk your UI getting out of sync with your server.
-  // Use with caution. If you are uncomfortable with this optimization, update the
-  // line below to `return defaultShouldRevalidate` instead.
-  // For more details see: https://remix.run/docs/en/main/route/should-revalidate
   return false;
 };
 
 /**
- * The main and reset stylesheets are added in the Layout component
- * to prevent a bug in development HMR updates.
+ * The link to the main stylesheet is purposely not in this list. Instead, it is added
+ * in the Layout function.
  *
- * This avoids the "failed to execute 'insertBefore' on 'Node'" error
- * that occurs after editing and navigating to another page.
+ * This is to avoid a development bug where after an edit/save, navigating to another
+ * link will cause page rendering error "failed to execute 'insertBefore' on 'Node'".
  *
- * It's a temporary fix until the issue is resolved.
- * https://github.com/remix-run/remix/issues/9242
+ * This is a workaround until this is fixed in the foundational library.
  */
-export function links() {
+export const links: LinksFunction = () => {
   return [
-    {
-      rel: 'preconnect',
-      href: 'https://cdn.shopify.com',
-    },
-    {
-      rel: 'preconnect',
-      href: 'https://shop.app',
-    },
+    {rel: 'preconnect', href: 'https://cdn.shopify.com'},
+    {rel: 'preconnect', href: 'https://shop.app'},
     {rel: 'icon', type: 'image/svg+xml', href: favicon},
   ];
-}
+};
 
 export async function loader(args: LoaderFunctionArgs) {
+  const {env} = args.context;
+
   // Start fetching non-critical data without blocking time to first byte
   const deferredData = loadDeferredData(args);
-
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  const {storefront, env} = args.context;
-
-  return {
+  //
+  return defer({
     ...deferredData,
     ...criticalData,
+
+    /**********  EXAMPLE UPDATE STARTS  ************/
+    env,
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
-    shop: getShopAnalytics({
-      storefront,
-      publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
-    }),
-    consent: {
-      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
-      storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
-      withPrivacyBanner: false,
-      // localize the privacy banner
-      country: args.context.storefront.i18n.country,
-      language: args.context.storefront.i18n.language,
-    },
-  };
+    publicStoreSubdomain: env.PUBLIC_SHOPIFY_STORE_DOMAIN,
+    publicStoreCdnStaticUrl: env.PUBLIC_STORE_CDN_STATIC_URL,
+    publicImageFormatForProductOption:
+      env.PUBLIC_IMAGE_FORMAT_FOR_PRODUCT_OPTION,
+    publicOkendoSubcriberId: env.PUBLIC_OKENDO_SUBSCRIBER_ID,
+    /**********   EXAMPLE UPDATE END   ************/
+  });
 }
 
 /**
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData({context}: LoaderFunctionArgs) {
-  const {storefront} = context;
-
-  const [header] = await Promise.all([
-    storefront.query(HEADER_QUERY, {
-      cache: storefront.CacheLong(),
-      variables: {
-        headerMenuHandle: 'main-menu', // Adjust to your header menu handle
-      },
+async function loadCriticalData({request, context}: LoaderFunctionArgs) {
+  const [layout, okendoProviderData] = await Promise.all([
+    getLayoutData(context),
+    getOkendoProviderData({
+      context,
+      subscriberId: context.env.PUBLIC_OKENDO_SUBSCRIBER_ID,
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
 
-  return {header};
+  const seo = seoPayload.root({shop: layout.shop, url: request.url});
+  const {storefront, env} = context;
+
+  return {
+    layout,
+    seo,
+    shop: getShopAnalytics({
+      storefront: context.storefront,
+      publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
+    }),
+    consent: {
+      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
+      storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+      withPrivacyBanner: true,
+    },
+    selectedLocale: storefront.i18n,
+    okendoProviderData,
+  };
 }
 
 /**
@@ -119,54 +136,94 @@ async function loadCriticalData({context}: LoaderFunctionArgs) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
 function loadDeferredData({context}: LoaderFunctionArgs) {
-  const {storefront, customerAccount, cart} = context;
+  const {cart, customerAccount, storefront} = context;
+  const isLoggedInPromise = customerAccount.isLoggedIn();
+  const {language, country} = storefront.i18n;
 
-  // defer the footer query (below the fold)
-  const footer = storefront
-    .query(FOOTER_QUERY, {
-      cache: storefront.CacheLong(),
-      variables: {
-        footerMenuHandle: 'footer', // Adjust to your footer menu handle
-      },
-    })
-    .catch((error) => {
-      // Log query errors, but don't throw them so the page can still render
-      console.error(error);
-      return null;
-    });
+  // Load the header, footer and layout data in parallel
+  const headerPromise = storefront.query(HEADER_QUERY, {
+    cache: storefront.CacheLong(),
+    variables: {
+      featuredCollectionsFirst: 1,
+      socialsFirst: 10,
+      headerMenuHandle: 'main-menu',
+      language,
+      country,
+    },
+  });
+  const footerPromise = storefront.query(FOOTER_QUERY, {
+    cache: storefront.CacheLong(),
+    variables: {
+      footerMenuHandle: 'footer',
+      language,
+      country,
+    },
+  });
+
   return {
+    isLoggedIn: isLoggedInPromise,
+    isLoggedInPromise,
     cart: cart.get(),
-    isLoggedIn: customerAccount.isLoggedIn(),
-    footer,
+    headerPromise,
+    footerPromise,
   };
 }
 
-export function Layout({children}: {children?: React.ReactNode}) {
+export type RootLoader = typeof loader;
+
+export const meta: MetaFunction<RootLoader> = ({data, matches}) => {
+  // Pass one or more arguments, preserving properties from parent routes
+  return getSeoMeta(...matches.map((match) => (match?.data as any)?.seo));
+};
+
+function MainLayout({children}: {children?: React.ReactNode}) {
   const nonce = useNonce();
   const data = useRouteLoaderData<RootLoader>('root');
+  const locale = data?.selectedLocale ?? DEFAULT_LOCALE;
 
   return (
-    <html lang="en">
+    <html lang={locale.language}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <link rel="stylesheet" href={resetStyles}></link>
-        <link rel="stylesheet" href={appStyles}></link>
+        <meta name="msvalidate.01" content="A352E6A0AF9A652267361BBB572B8468" />
+        {data ? (
+          <meta
+            name="oke:subscriber_id"
+            content={data.publicOkendoSubcriberId}
+          />
+        ) : null}
+        <link rel="stylesheet" href={styles}></link>
+        <link rel="stylesheet" href={stylesFont}></link>
+        <link rel="stylesheet" href={rcSliderStyle}></link>
+
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="bg-white">
         {data ? (
-          <Analytics.Provider
-            cart={data.cart}
-            shop={data.shop}
-            consent={data.consent}
-          >
-            <PageLayout {...data}>{children}</PageLayout>
-          </Analytics.Provider>
+          <>
+            <OkendoProvider
+              nonce={nonce}
+              okendoProviderData={data.okendoProviderData}
+            />
+            <Analytics.Provider
+              cart={data.cart}
+              shop={data.shop}
+              consent={data.consent}
+            >
+              <Layout
+                key={`${locale.language}-${locale.country}`}
+                layout={data.layout}
+              >
+                {children}
+              </Layout>
+            </Analytics.Provider>
+          </>
         ) : (
           children
         )}
+
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
       </body>
@@ -175,30 +232,191 @@ export function Layout({children}: {children?: React.ReactNode}) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <MainLayout>
+      <Outlet />
+    </MainLayout>
+  );
 }
 
-export function ErrorBoundary() {
-  const error = useRouteError();
-  let errorMessage = 'Unknown error';
-  let errorStatus = 500;
+export function ErrorBoundary({error}: {error: Error}) {
+  const nonce = useNonce();
+  const routeError = useRouteError();
+  const isRouteError = isRouteErrorResponse(routeError);
 
-  if (isRouteErrorResponse(error)) {
-    errorMessage = error?.data?.message ?? error.data;
-    errorStatus = error.status;
-  } else if (error instanceof Error) {
-    errorMessage = error.message;
+  let title = 'Error';
+  let pageType = 'page';
+
+  if (isRouteError) {
+    title = 'Not found';
+    if (routeError.status === 404) pageType = routeError.data || pageType;
   }
 
   return (
-    <div className="route-error">
-      <h1>Oops</h1>
-      <h2>{errorStatus}</h2>
-      {errorMessage && (
-        <fieldset>
-          <pre>{errorMessage}</pre>
-        </fieldset>
-      )}
-    </div>
+    <MainLayout>
+      <>
+        {isRouteError ? (
+          <>
+            {routeError.status === 404 ? (
+              <NotFound type={pageType} />
+            ) : (
+              <GenericError
+                error={{message: `${routeError.status} ${routeError.data}`}}
+              />
+            )}
+          </>
+        ) : (
+          <GenericError error={error instanceof Error ? error : undefined} />
+        )}
+      </>
+    </MainLayout>
   );
+}
+
+const MENU_FRAGMENT = `#graphql
+  fragment MenuItem on MenuItem {
+    id
+    resourceId
+    tags
+    title
+    type
+    url
+  }
+  fragment ChildMenuItem on MenuItem {
+    ...MenuItem
+  }
+  fragment ParentMenuItem on MenuItem {
+    ...MenuItem
+    items {
+      ...ChildMenuItem
+    }
+  }
+  fragment Menu on Menu {
+    id
+    title
+    items {
+      ...ParentMenuItem
+    }
+  }
+` as const;
+
+const LAYOUT_QUERY = `#graphql
+  query layout(
+    $language: LanguageCode
+    $country: CountryCode
+  ) @inContext(language: $language, country: $country) {
+    shop {
+      ...Shop
+    }
+  }
+  fragment Shop on Shop {
+    id
+    name
+    description
+    primaryDomain {
+      url
+    }
+    brand {
+      logo {
+        image {
+          url
+          width
+          height
+        }
+      }
+      squareLogo {
+        image {
+          altText
+          height
+          width
+          url
+        }
+      }
+    }
+  }
+` as const;
+
+const FOOTER_QUERY = `#graphql
+  query FooterMenu(
+    $language: LanguageCode
+    $country: CountryCode
+    $footerMenuHandle: String!
+  ) @inContext(language: $language, country: $country) {
+    footerMenu: menu(handle: $footerMenuHandle) {
+      ...Menu
+    }
+  }
+  ${MENU_FRAGMENT}
+` as const;
+
+const HEADER_QUERY = `#graphql
+  query HeaderMenu(
+    $language: LanguageCode
+    $country: CountryCode
+    $headerMenuHandle: String!
+    $featuredCollectionsFirst: Int!
+    $socialsFirst: Int!
+  ) @inContext(language: $language, country: $country) {
+    headerMenu: menu(handle: $headerMenuHandle) {
+      ...Menu
+    }
+    featuredCollections: collections(first: $featuredCollectionsFirst, sortKey: UPDATED_AT) {
+      nodes {
+        ...CommonCollectionItem
+      }
+    }
+    socials: metaobjects(type: "ciseco--social", first: $socialsFirst) {
+      edges {
+        node {
+          type
+          id
+          handle
+          title: field(key: "title") {
+            type
+            key
+            value
+          }
+          description: field(key: "description") {
+            type
+            key
+            value
+          }
+          icon: field(key: "icon") {
+            type
+            key
+            reference {
+              ... on MediaImage {
+                image {
+                  altText
+                  url
+                  width
+                  height
+                }
+              }
+            }
+          }
+          link: field(key: "link") {
+            type
+            key
+            value
+          }
+        }
+      }
+    }
+  }
+  ${MENU_FRAGMENT}
+  ${COMMON_COLLECTION_ITEM_FRAGMENT}
+` as const;
+
+async function getLayoutData({storefront, env}: AppLoadContext) {
+  const data = await storefront.query(LAYOUT_QUERY, {
+    variables: {
+      country: storefront.i18n.country,
+      language: storefront.i18n.language,
+    },
+  });
+
+  invariant(data, 'No data returned from Shopify API');
+
+  return data;
 }

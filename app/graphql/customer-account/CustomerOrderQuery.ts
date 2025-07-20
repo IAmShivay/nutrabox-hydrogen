@@ -41,6 +41,7 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
       width
     }
     variantTitle
+    variantId
   }
   fragment Order on Order {
     id
@@ -75,6 +76,12 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
       nodes {
         ...OrderLineItemFull
       }
+    }
+    cancelledAt
+    cancelReason
+    financialStatus
+    paymentInformation {
+      paymentCollectionUrl
     }
   }
   query Order($orderId: ID!) {

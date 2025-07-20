@@ -1,5 +1,4 @@
 node_modules
-/.DS_Store
 /.cache
 /build
 /dist
@@ -7,4 +6,4 @@ node_modules
 /.mf
 .env
 .shopify
-.react-router
+.vercel

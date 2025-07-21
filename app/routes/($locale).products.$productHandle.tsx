@@ -1,10 +1,10 @@
-import {Suspense, useState} from 'react';
+import { Suspense, useState } from 'react';
 import {
   defer,
   type MetaArgs,
   type LoaderFunctionArgs,
 } from '@shopify/remix-oxygen';
-import {useLoaderData, Await, useRouteLoaderData} from '@remix-run/react';
+import { useLoaderData, Await, useRouteLoaderData } from '@remix-run/react';
 import {
   type VariantOption,
   Image,
@@ -23,23 +23,23 @@ import type {
   ProductOptionValueSwatch,
   SelectedOption,
 } from '@shopify/hydrogen/storefront-api-types';
-import type {ProductFragment} from 'storefrontapi.generated';
-import {ProductGallery} from '~/components/ProductGallery';
-import {Skeleton} from '~/components/Skeleton';
-import {Link} from '~/components/Link';
-import {AddToCartButton} from '~/components/AddToCartButton';
-import {seoPayload} from '~/lib/seo.server';
-import type {Storefront} from '~/lib/type';
-import {routeHeaders} from '~/data/cache';
-import {MEDIA_FRAGMENT} from '~/data/fragments';
+import type { ProductFragment } from 'storefrontapi.generated';
+import { ProductGallery } from '~/components/ProductGallery';
+import { Skeleton } from '~/components/Skeleton';
+import { Link } from '~/components/Link';
+import { AddToCartButton } from '~/components/AddToCartButton';
+import { seoPayload } from '~/lib/seo.server';
+import type { Storefront } from '~/lib/type';
+import { routeHeaders } from '~/data/cache';
+import { MEDIA_FRAGMENT } from '~/data/fragments';
 import Prices from '~/components/Prices';
 import NcInputNumber from '~/components/NcInputNumber';
 import Policy from '~/components/Policy';
 import ButtonPrimary from '~/components/Button/ButtonPrimary';
 import BagIcon from '~/components/BagIcon';
-import {NoSymbolIcon} from '@heroicons/react/24/outline';
-import {getProductStatus, ProductBadge} from '~/components/ProductCard';
-import {useGetPublicStoreCdnStaticUrlFromRootLoaderData} from '~/hooks/useGetPublicStoreCdnStaticUrlFromRootLoaderData';
+import { NoSymbolIcon } from '@heroicons/react/24/outline';
+import { getProductStatus, ProductBadge } from '~/components/ProductCard';
+import { useGetPublicStoreCdnStaticUrlFromRootLoaderData } from '~/hooks/useGetPublicStoreCdnStaticUrlFromRootLoaderData';
 import ButtonSecondary from '~/components/Button/ButtonSecondary';
 import LikeButton from '~/components/LikeButton';
 import {
@@ -48,20 +48,22 @@ import {
   OkendoReviews,
   OkendoStarRating,
 } from '@okendo/shopify-hydrogen';
-import {COMMON_PRODUCT_CARD_FRAGMENT} from '~/data/commonFragments';
-import {SnapSliderProducts} from '~/components/SnapSliderProducts';
-import {RouteContent} from '~/sections/RouteContent';
-import {getSeoMeta} from '@shopify/hydrogen';
-import {getLoaderRouteFromMetaobject} from '~/utils/getLoaderRouteFromMetaobject';
-import type {RootLoader} from '~/root';
-import {useAside} from '~/components/Aside';
-import {SlashIcon} from '@heroicons/react/24/solid';
+import { COMMON_PRODUCT_CARD_FRAGMENT } from '~/data/commonFragments';
+import { SnapSliderProducts } from '~/components/SnapSliderProducts';
+import { RouteContent } from '~/sections/RouteContent';
+import { getSeoMeta } from '@shopify/hydrogen';
+import { getLoaderRouteFromMetaobject } from '~/utils/getLoaderRouteFromMetaobject';
+import type { RootLoader } from '~/root';
+import { useAside } from '~/components/Aside';
+import { SlashIcon } from '@heroicons/react/24/solid';
+import ProductHeroSection from '~/components/ProductHeroSection';
+import ProductFeatureSlider from '~/components/ProductFeatureSlider';
 
 export const headers = routeHeaders;
 
 export async function loader(args: LoaderFunctionArgs) {
-  const {params} = args;
-  const {productHandle} = params;
+  const { params } = args;
+  const { productHandle } = params;
   invariant(productHandle, 'Missing productHandle param, check route filename');
 
   // Start fetching non-critical data without blocking time to first byte
@@ -70,12 +72,12 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer({...deferredData, ...criticalData});
+  return defer({ ...deferredData, ...criticalData });
 }
 
 async function loadCriticalData(args: LoaderFunctionArgs) {
-  const {params, request, context} = args;
-  const {productHandle} = params;
+  const { params, request, context } = args;
+  const { productHandle } = params;
   invariant(productHandle, 'Missing productHandle param, check route filename');
 
   const selectedOptions = getSelectedProductOptions(request).filter(
@@ -94,7 +96,7 @@ async function loadCriticalData(args: LoaderFunctionArgs) {
     throw new Error('Expected product handle to be defined');
   }
 
-  const [{shop, product}] = await Promise.all([
+  const [{ shop, product }] = await Promise.all([
     context.storefront.query(PRODUCT_QUERY, {
       variables: {
         handle: productHandle,
@@ -106,7 +108,7 @@ async function loadCriticalData(args: LoaderFunctionArgs) {
   ]);
 
   if (!product?.id) {
-    throw new Response('product', {status: 404});
+    throw new Response('product', { status: 404 });
   }
 
   const recommended = getRecommendedProducts(context.storefront, product.id);
@@ -114,7 +116,7 @@ async function loadCriticalData(args: LoaderFunctionArgs) {
   const variants = getAdjacentAndFirstAvailableVariants(product);
 
   const seo = seoPayload.product({
-    product: {...product, variants},
+    product: { ...product, variants },
     selectedVariant,
     url: request.url,
   });
@@ -130,8 +132,8 @@ async function loadCriticalData(args: LoaderFunctionArgs) {
 }
 
 function loadDeferredData(args: LoaderFunctionArgs) {
-  const {params, request, context} = args;
-  const {productHandle} = params;
+  const { params, request, context } = args;
+  const { productHandle } = params;
   invariant(productHandle, 'Missing productHandle param, check route filename');
 
   // 3. Query the route metaobject
@@ -147,15 +149,15 @@ function loadDeferredData(args: LoaderFunctionArgs) {
   };
 }
 
-export const meta = ({matches}: MetaArgs<typeof loader>) => {
+export const meta = ({ matches }: MetaArgs<typeof loader>) => {
   return getSeoMeta(...matches.map((match) => (match.data as any).seo));
 };
 
 export default function Product() {
-  const {product, shop, recommended, variants, routePromise, storeDomain} =
+  const { product, shop, recommended, variants, routePromise, storeDomain } =
     useLoaderData<typeof loader>();
-  const {media, outstanding_features, descriptionHtml, id} = product;
-  const {shippingPolicy, refundPolicy, subscriptionPolicy} = shop;
+  const { media, outstanding_features, descriptionHtml, id } = product;
+  const { shippingPolicy, refundPolicy, subscriptionPolicy } = shop;
 
   // Optimistically selects a variant with given available variant information
   const selectedVariant = useOptimisticVariant(
@@ -176,7 +178,25 @@ export default function Product() {
       className={clsx(
         'product-page mt-5 lg:mt-10 pb-20 lg:pb-28 space-y-12 sm:space-y-16',
       )}
-    >
+    ><ProductHeroSection
+        desktopImage={
+          product.featured_media?.references?.nodes?.[0]?.image ||
+          (product.media?.nodes?.[0]?.__typename === 'MediaImage' ? product.media.nodes[0].image : null)
+        }
+        mobileImage={
+          product.featured_media?.references?.nodes?.[1]?.image ||
+          product.featured_media?.references?.nodes?.[0]?.image ||
+          (product.media?.nodes?.[0]?.__typename === 'MediaImage' ? product.media.nodes[0].image : null)
+        }
+        altText={
+          product.featured_media?.references?.nodes?.[0]?.image?.altText ||
+          product.media?.nodes?.[0]?.alt ||
+          product.title
+        }
+      />
+      <ProductFeatureSlider
+      
+      />,
       <main className="container">
         <div className="lg:flex">
           {/* Galleries */}
@@ -215,12 +235,12 @@ export default function Product() {
                       dangerouslySetInnerHTML={{
                         __html: `<ul role="list"> 
                     ${(
-                      JSON.parse(
-                        outstanding_features?.value || '[]',
-                      ) as string[]
-                    )
-                      .map((item: string) => `<li>${item}</li>`)
-                      .join('')} 
+                            JSON.parse(
+                              outstanding_features?.value || '[]',
+                            ) as string[]
+                          )
+                            .map((item: string) => `<li>${item}</li>`)
+                            .join('')} 
                     </ul>`,
                       }}
                     ></div>
@@ -281,13 +301,15 @@ export default function Product() {
         </div>
       </main>
 
+      {/* Product Detail Section with USPs */}
+
       {/* 3. Render the route's content sections */}
       <Suspense fallback={<div className="h-32" />}>
         <Await
           errorElement="There was a problem loading route's content sections"
           resolve={routePromise}
         >
-          {({route}) => (
+          {({ route }) => (
             <>
               <RouteContent
                 route={route}
@@ -326,10 +348,9 @@ export function ProductForm({
   selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
   storeDomain: string;
 }) {
-  const {open} = useAside();
-  const {product} = useLoaderData<typeof loader>();
+  const { open } = useAside();
+  const { product } = useLoaderData<typeof loader>();
   const [quantity, setQuantity] = useState(1);
-
   const isOutOfStock = !selectedVariant?.availableForSale;
 
   const status = getProductStatus({
@@ -477,7 +498,7 @@ export function ProductForm({
   );
 }
 
-const ProductOtherOption = ({option}: {option: MappedProductOptions}) => {
+const ProductOtherOption = ({ option }: { option: MappedProductOptions }) => {
   if (!option.optionValues.length) {
     return null;
   }
@@ -501,7 +522,7 @@ const ProductOtherOption = ({option}: {option: MappedProductOptions}) => {
             return (
               <Link
                 key={option.name + value}
-                {...(!isDifferentProduct ? {rel: 'nofollow'} : {})}
+                {...(!isDifferentProduct ? { rel: 'nofollow' } : {})}
                 to={`/products/${handle}?${variantUriQuery}`}
                 preventScrollReset
                 prefetch="intent"
@@ -559,8 +580,8 @@ const ProductOtherOption = ({option}: {option: MappedProductOptions}) => {
   );
 };
 
-const ProductColorOption = ({option}: {option: MappedProductOptions}) => {
-  const {getImageWithCdnUrlByName} =
+const ProductColorOption = ({ option }: { option: MappedProductOptions }) => {
+  const { getImageWithCdnUrlByName } =
     useGetPublicStoreCdnStaticUrlFromRootLoaderData();
 
   if (!option.optionValues.length) {
@@ -582,7 +603,7 @@ const ProductColorOption = ({option}: {option: MappedProductOptions}) => {
           }) => (
             <Link
               key={option.name + value}
-              {...(!isDifferentProduct ? {rel: 'nofollow'} : {})}
+              {...(!isDifferentProduct ? { rel: 'nofollow' } : {})}
               to={`/products/${handle}?${variantUriQuery}`}
               preventScrollReset
               prefetch="intent"
@@ -645,7 +666,7 @@ function ProductOptionSwatch({
   );
 }
 
-const ProductReviews = ({product}: {product: ProductFragment}) => {
+const ProductReviews = ({ product }: { product: ProductFragment }) => {
   const rootData = useRouteLoaderData<RootLoader>('root');
   const publicOkendoSubcriberId = rootData?.publicOkendoSubcriberId;
 
@@ -711,7 +732,6 @@ export const PRODUCT_VARIANT_FRAGMENT = `#graphql
     }
   }
 `;
-
 const PRODUCT_FRAGMENT = `#graphql
   fragment Product on Product {
     id
@@ -742,12 +762,86 @@ const PRODUCT_FRAGMENT = `#graphql
         namespace
         key
       }
+        usps: metafield(namespace: "scraft", key:"usps") {
+        id
+        value
+        namespace
+        key
+        type
+        references(first: 10) {
+          nodes {
+            ... on MediaImage {
+              id
+              image {
+                url
+                altText
+                width
+                height
+              }
+            }
+            ... on Metaobject {
+              id
+              type
+              fields {
+                key
+                value
+                type
+                reference {
+                  ... on MediaImage {
+                    id
+                    image {
+                      url
+                      altText
+                      width
+                      height
+                    }
+                  }
+                }
+                references(first: 5) {
+                  nodes {
+                    ... on MediaImage {
+                      id
+                      image {
+                        url
+                        altText
+                        width
+                        height
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      featured_media: metafield(namespace: "scraft", key:"featured_media") {
+        id
+        value
+        namespace
+        key
+        type
+        references(first: 2) {
+          nodes {
+            ... on MediaImage {
+              id
+              image {
+                url
+                altText
+                width
+                height
+              }
+            }
+          }
+        }
+      }
       outstanding_features: metafield(namespace: "ciseco--product", key:"outstanding_features") {
         id
         value
         namespace
         key
       }
+
       options {
         name
         optionValues {
@@ -847,7 +941,7 @@ async function getRecommendedProducts(
   productId: string,
 ) {
   const products = await storefront.query(RECOMMENDED_PRODUCTS_QUERY, {
-    variables: {productId, count: 12},
+    variables: { productId, count: 12 },
   });
 
   invariant(products, 'No data returned from Shopify API');
@@ -865,5 +959,5 @@ async function getRecommendedProducts(
 
   mergedProducts.splice(originalProduct, 1);
 
-  return {nodes: mergedProducts};
+  return { nodes: mergedProducts };
 }

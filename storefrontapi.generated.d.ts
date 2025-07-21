@@ -1102,6 +1102,72 @@ export type ProductFragment = Pick<
   reviews_rating?: StorefrontAPI.Maybe<
     Pick<StorefrontAPI.Metafield, 'id' | 'value' | 'namespace' | 'key'>
   >;
+  usps?: StorefrontAPI.Maybe<
+    Pick<
+      StorefrontAPI.Metafield,
+      'id' | 'value' | 'namespace' | 'key' | 'type'
+    > & {
+      references?: StorefrontAPI.Maybe<{
+        nodes: Array<
+          | (Pick<StorefrontAPI.MediaImage, 'id'> & {
+              image?: StorefrontAPI.Maybe<
+                Pick<
+                  StorefrontAPI.Image,
+                  'url' | 'altText' | 'width' | 'height'
+                >
+              >;
+            })
+          | (Pick<StorefrontAPI.Metaobject, 'id' | 'type'> & {
+              fields: Array<
+                Pick<
+                  StorefrontAPI.MetaobjectField,
+                  'key' | 'value' | 'type'
+                > & {
+                  reference?: StorefrontAPI.Maybe<
+                    Pick<StorefrontAPI.MediaImage, 'id'> & {
+                      image?: StorefrontAPI.Maybe<
+                        Pick<
+                          StorefrontAPI.Image,
+                          'url' | 'altText' | 'width' | 'height'
+                        >
+                      >;
+                    }
+                  >;
+                  references?: StorefrontAPI.Maybe<{
+                    nodes: Array<
+                      Pick<StorefrontAPI.MediaImage, 'id'> & {
+                        image?: StorefrontAPI.Maybe<
+                          Pick<
+                            StorefrontAPI.Image,
+                            'url' | 'altText' | 'width' | 'height'
+                          >
+                        >;
+                      }
+                    >;
+                  }>;
+                }
+              >;
+            })
+        >;
+      }>;
+    }
+  >;
+  featured_media?: StorefrontAPI.Maybe<
+    Pick<
+      StorefrontAPI.Metafield,
+      'id' | 'value' | 'namespace' | 'key' | 'type'
+    > & {
+      references?: StorefrontAPI.Maybe<{
+        nodes: Array<
+          Pick<StorefrontAPI.MediaImage, 'id'> & {
+            image?: StorefrontAPI.Maybe<
+              Pick<StorefrontAPI.Image, 'url' | 'altText' | 'width' | 'height'>
+            >;
+          }
+        >;
+      }>;
+    }
+  >;
   outstanding_features?: StorefrontAPI.Maybe<
     Pick<StorefrontAPI.Metafield, 'id' | 'value' | 'namespace' | 'key'>
   >;
@@ -1271,6 +1337,75 @@ export type ProductQuery = {
       >;
       reviews_rating?: StorefrontAPI.Maybe<
         Pick<StorefrontAPI.Metafield, 'id' | 'value' | 'namespace' | 'key'>
+      >;
+      usps?: StorefrontAPI.Maybe<
+        Pick<
+          StorefrontAPI.Metafield,
+          'id' | 'value' | 'namespace' | 'key' | 'type'
+        > & {
+          references?: StorefrontAPI.Maybe<{
+            nodes: Array<
+              | (Pick<StorefrontAPI.MediaImage, 'id'> & {
+                  image?: StorefrontAPI.Maybe<
+                    Pick<
+                      StorefrontAPI.Image,
+                      'url' | 'altText' | 'width' | 'height'
+                    >
+                  >;
+                })
+              | (Pick<StorefrontAPI.Metaobject, 'id' | 'type'> & {
+                  fields: Array<
+                    Pick<
+                      StorefrontAPI.MetaobjectField,
+                      'key' | 'value' | 'type'
+                    > & {
+                      reference?: StorefrontAPI.Maybe<
+                        Pick<StorefrontAPI.MediaImage, 'id'> & {
+                          image?: StorefrontAPI.Maybe<
+                            Pick<
+                              StorefrontAPI.Image,
+                              'url' | 'altText' | 'width' | 'height'
+                            >
+                          >;
+                        }
+                      >;
+                      references?: StorefrontAPI.Maybe<{
+                        nodes: Array<
+                          Pick<StorefrontAPI.MediaImage, 'id'> & {
+                            image?: StorefrontAPI.Maybe<
+                              Pick<
+                                StorefrontAPI.Image,
+                                'url' | 'altText' | 'width' | 'height'
+                              >
+                            >;
+                          }
+                        >;
+                      }>;
+                    }
+                  >;
+                })
+            >;
+          }>;
+        }
+      >;
+      featured_media?: StorefrontAPI.Maybe<
+        Pick<
+          StorefrontAPI.Metafield,
+          'id' | 'value' | 'namespace' | 'key' | 'type'
+        > & {
+          references?: StorefrontAPI.Maybe<{
+            nodes: Array<
+              Pick<StorefrontAPI.MediaImage, 'id'> & {
+                image?: StorefrontAPI.Maybe<
+                  Pick<
+                    StorefrontAPI.Image,
+                    'url' | 'altText' | 'width' | 'height'
+                  >
+                >;
+              }
+            >;
+          }>;
+        }
       >;
       outstanding_features?: StorefrontAPI.Maybe<
         Pick<StorefrontAPI.Metafield, 'id' | 'value' | 'namespace' | 'key'>
@@ -4059,7 +4194,7 @@ interface GeneratedQueryTypes {
     return: PoliciesIndexQuery;
     variables: PoliciesIndexQueryVariables;
   };
-  '#graphql\n  query Product(\n    $country: CountryCode\n    $language: LanguageCode\n    $handle: String!\n    $selectedOptions: [SelectedOptionInput!]!\n  ) @inContext(country: $country, language: $language) {\n    product(handle: $handle) {\n      ...Product\n    }\n    shop {\n      name\n      primaryDomain {\n        url\n      }\n      shippingPolicy {\n        handle\n      }\n      refundPolicy {\n        handle\n      }\n      subscriptionPolicy {\n        handle\n      }\n    }\n  }\n  #graphql\n  fragment Media on Media {\n    __typename\n    mediaContentType\n    alt\n    previewImage {\n      url\n    }\n    ... on MediaImage {\n      id\n      image {\n        id\n        url\n        width\n        height\n      }\n    }\n    ... on Video {\n      id\n      sources {\n        mimeType\n        url\n      }\n    }\n    ... on Model3d {\n      id\n      sources {\n        mimeType\n        url\n      }\n    }\n    ... on ExternalVideo {\n      id\n      embedUrl\n      host\n    }\n  }\n\n  #graphql\n  fragment Product on Product {\n    id\n      title\n      vendor\n      handle\n      descriptionHtml\n      description\n      publishedAt\n      encodedVariantExistence\n      encodedVariantAvailability\n      collections(first: 1) {\n        nodes {\n          id\n          title\n          handle\n        }\n      }\n      reviews_rating_count: metafield(namespace: "reviews", key:"rating_count") {\n        id\n        value\n        namespace\n        key\n      }\n      reviews_rating: metafield(namespace: "reviews", key:"rating") {\n        id\n        value\n        namespace\n        key\n      }\n      outstanding_features: metafield(namespace: "ciseco--product", key:"outstanding_features") {\n        id\n        value\n        namespace\n        key\n      }\n      options {\n        name\n        optionValues {\n          name\n          firstSelectableVariant {\n            ...ProductVariant\n          }\n          swatch {\n            color\n            image {\n              previewImage {\n                url\n              }\n            }\n          }\n        }\n      }\n      selectedOrFirstAvailableVariant(selectedOptions: $selectedOptions, ignoreUnknownOptions: true, caseInsensitiveMatch: true) {\n        ...ProductVariant\n      }\n      adjacentVariants (selectedOptions: $selectedOptions) {\n        ...ProductVariant\n      }\n      media(first: 7) {\n        nodes {\n          ...Media\n        }\n      }\n      # variants(first: 1) {\n      #   nodes {\n      #     ...ProductVariant\n      #   }\n      # }\n      seo {\n        description\n        title\n      }\n      ...OkendoStarRatingSnippet\n\t\t  ...OkendoReviewsSnippet\n  }\n  #graphql\n  fragment ProductVariant on ProductVariant {\n    id\n    availableForSale\n    selectedOptions {\n      name\n      value\n    }\n    image {\n      id\n      url\n      altText\n      width\n      height\n    }\n    price {\n      amount\n      currencyCode\n    }\n    compareAtPrice {\n      amount\n      currencyCode\n    }\n    sku\n    title\n    unitPrice {\n      amount\n      currencyCode\n    }\n    product {\n      title\n      handle\n    }\n  }\n\n  #graphql\n\tfragment OkendoStarRatingSnippet on Product {\n\t\tokendoStarRatingSnippet: metafield(\n\t\t\tnamespace: "okendo"\n\t\t\tkey: "StarRatingSnippet"\n\t\t) {\n\t\t\tvalue\n\t\t}\n\t}\n\n\t#graphql\n\tfragment OkendoReviewsSnippet on Product {\n\t\tokendoReviewsSnippet: metafield(\n\t\t\tnamespace: "okendo"\n\t\t\tkey: "ReviewsWidgetSnippet"\n\t\t) {\n\t\t\tvalue\n\t\t}\n\t}\n\n\n': {
+  '#graphql\n  query Product(\n    $country: CountryCode\n    $language: LanguageCode\n    $handle: String!\n    $selectedOptions: [SelectedOptionInput!]!\n  ) @inContext(country: $country, language: $language) {\n    product(handle: $handle) {\n      ...Product\n    }\n    shop {\n      name\n      primaryDomain {\n        url\n      }\n      shippingPolicy {\n        handle\n      }\n      refundPolicy {\n        handle\n      }\n      subscriptionPolicy {\n        handle\n      }\n    }\n  }\n  #graphql\n  fragment Media on Media {\n    __typename\n    mediaContentType\n    alt\n    previewImage {\n      url\n    }\n    ... on MediaImage {\n      id\n      image {\n        id\n        url\n        width\n        height\n      }\n    }\n    ... on Video {\n      id\n      sources {\n        mimeType\n        url\n      }\n    }\n    ... on Model3d {\n      id\n      sources {\n        mimeType\n        url\n      }\n    }\n    ... on ExternalVideo {\n      id\n      embedUrl\n      host\n    }\n  }\n\n  #graphql\n  fragment Product on Product {\n    id\n      title\n      vendor\n      handle\n      descriptionHtml\n      description\n      publishedAt\n      encodedVariantExistence\n      encodedVariantAvailability\n      collections(first: 1) {\n        nodes {\n          id\n          title\n          handle\n        }\n      }\n      reviews_rating_count: metafield(namespace: "reviews", key:"rating_count") {\n        id\n        value\n        namespace\n        key\n      }\n      reviews_rating: metafield(namespace: "reviews", key:"rating") {\n        id\n        value\n        namespace\n        key\n      }\n        usps: metafield(namespace: "scraft", key:"usps") {\n        id\n        value\n        namespace\n        key\n        type\n        references(first: 10) {\n          nodes {\n            ... on MediaImage {\n              id\n              image {\n                url\n                altText\n                width\n                height\n              }\n            }\n            ... on Metaobject {\n              id\n              type\n              fields {\n                key\n                value\n                type\n                reference {\n                  ... on MediaImage {\n                    id\n                    image {\n                      url\n                      altText\n                      width\n                      height\n                    }\n                  }\n                }\n                references(first: 5) {\n                  nodes {\n                    ... on MediaImage {\n                      id\n                      image {\n                        url\n                        altText\n                        width\n                        height\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n      featured_media: metafield(namespace: "scraft", key:"featured_media") {\n        id\n        value\n        namespace\n        key\n        type\n        references(first: 2) {\n          nodes {\n            ... on MediaImage {\n              id\n              image {\n                url\n                altText\n                width\n                height\n              }\n            }\n          }\n        }\n      }\n      outstanding_features: metafield(namespace: "ciseco--product", key:"outstanding_features") {\n        id\n        value\n        namespace\n        key\n      }\n\n      options {\n        name\n        optionValues {\n          name\n          firstSelectableVariant {\n            ...ProductVariant\n          }\n          swatch {\n            color\n            image {\n              previewImage {\n                url\n              }\n            }\n          }\n        }\n      }\n      selectedOrFirstAvailableVariant(selectedOptions: $selectedOptions, ignoreUnknownOptions: true, caseInsensitiveMatch: true) {\n        ...ProductVariant\n      }\n      adjacentVariants (selectedOptions: $selectedOptions) {\n        ...ProductVariant\n      }\n      media(first: 7) {\n        nodes {\n          ...Media\n        }\n      }\n      # variants(first: 1) {\n      #   nodes {\n      #     ...ProductVariant\n      #   }\n      # }\n      seo {\n        description\n        title\n      }\n      ...OkendoStarRatingSnippet\n\t\t  ...OkendoReviewsSnippet\n  }\n  #graphql\n  fragment ProductVariant on ProductVariant {\n    id\n    availableForSale\n    selectedOptions {\n      name\n      value\n    }\n    image {\n      id\n      url\n      altText\n      width\n      height\n    }\n    price {\n      amount\n      currencyCode\n    }\n    compareAtPrice {\n      amount\n      currencyCode\n    }\n    sku\n    title\n    unitPrice {\n      amount\n      currencyCode\n    }\n    product {\n      title\n      handle\n    }\n  }\n\n  #graphql\n\tfragment OkendoStarRatingSnippet on Product {\n\t\tokendoStarRatingSnippet: metafield(\n\t\t\tnamespace: "okendo"\n\t\t\tkey: "StarRatingSnippet"\n\t\t) {\n\t\t\tvalue\n\t\t}\n\t}\n\n\t#graphql\n\tfragment OkendoReviewsSnippet on Product {\n\t\tokendoReviewsSnippet: metafield(\n\t\t\tnamespace: "okendo"\n\t\t\tkey: "ReviewsWidgetSnippet"\n\t\t) {\n\t\t\tvalue\n\t\t}\n\t}\n\n\n': {
     return: ProductQuery;
     variables: ProductQueryVariables;
   };
